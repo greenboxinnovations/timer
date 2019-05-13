@@ -1,0 +1,120 @@
+operations
+CREATE TABLE `operations` (
+ `op_id` int(11) NOT NULL AUTO_INCREMENT,
+ `kart_no` int(3) NOT NULL,
+ `cust_id` int(11) NOT NULL,
+ `name` varchar(90) NOT NULL,
+ `lap` int(3) NOT NULL,
+ `timing` text NOT NULL,
+ `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (`op_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+
+
+// mysql
+add cur_lap
+modify max_lap
+add code
+add kart_id			(for cpp query)
+
+// make in api
+// for app and web fall-back
+function isValidCode(code)
+	if cur_lap == max_lap
+		return false
+	else 
+		return true
+
+function assignCart(code, kart_id)
+	update kart_id where code = code
+
+
+// c++
+// convert php to cpp
+function getLap()
+	$kart_id = $_GET['id'];
+
+	$sql = "SELECT `lap` 
+		FROM `operations` WHERE `kart_no` IN (SELECT `kart_no` FROM `id_map` WHERE `kart_id` = '$kart_id');";
+	$exe = mysqli_query($conn, $sql);
+	$row = mysqli_fetch_assoc($exe);
+	$lap = $row['lap'];
+	if (($lap == "")||($lap == NULL)) {
+		$lap = 0;
+	}
+	echo $lap;
+
+
+// convert php to cpp
+function saveLap()
+	$sql  = "SELECT `kart_no` FROM `id_map` WHERE `kart_id` = '".$kart_id."'";
+	
+	$sql2 = "SELECT * FROM `operations` WHERE `kart_no` = '".$kart_no."'";
+
+	if($count2 == 1){
+
+		$sql  = "SELECT `timing` FROM `operations` WHERE `kart_no` = '".$kart_no."'";
+
+		if ($timing == NULL) {
+			$timing = $time;
+		}else{
+			$timing = $timing.'|'.$time;
+		}
+
+		$sql = "UPDATE `operations` SET `timing`= '$timing', `lap` = `lap` + 1 , `time` = '$timestamp' WHERE `kart_no` = '".$kart_no."'";
+
+
+
+
+// insert
+stmt = con->createStatement();		
+stmt->execute("INSERT INTO `customers`(`name`, `no`) VALUES('narendra', 8411815106)");
+
+
+
+// select
+stmt = con->createStatement();
+//res = stmt->executeQuery("SELECT * FROM `maintenance` WHERE `m_id` = 10");
+//res = stmt->executeQuery("SELECT `kart_no` FROM `operations` WHERE `name` = 'test'");
+res = stmt->executeQuery("SELECT `best_lap` FROM `customers` WHERE `name` = 'akshay'");
+
+if (res->rowsCount() == 0) {
+	cout << "empty" << endl;
+}
+else {
+	while (res->next()) {
+		/* Access column data by alias or column name */
+		string g = res->getString("best_lap");
+		//int no = std::stoi(g);
+		cout << g << endl;
+		if (g == "") {
+			cout << "nothing" << endl;
+		}
+		//cout << no << endl;
+	}
+}
+
+
+
+
+
+
+// unique_ptr
+https://gist.github.com/tomov3/764a6d0ff4904a29d5ebdddd7f19d4fc
+
+sql::mysql::MySQL_Driver *driver = sql::mysql::get_mysql_driver_instance();
+unique_ptr<sql::Connection> con(driver->connect(HOST, USER, PASSWORD));
+unique_ptr<sql::Statement> stmt(con->createStatement());
+
+
+stmt->execute("USE " + DATABASE);
+stmt->execute("DROP TABLE IF EXISTS conference");
+stmt->execute("CREATE TABLE conference(cid int, name varchar(10))");
+cout << "conference table created." << endl;
+
+stmt->execute("INSERT INTO conference VALUES(1, 'SIGMOD')");
+stmt->execute("INSERT INTO conference VALUES(2, 'VLDB')");
+stmt->execute("INSERT INTO conference VALUES(3, 'ICDE')");
+stmt->execute("INSERT INTO conference VALUES(4, 'KDD')");
+
+unique_ptr<sql::ResultSet> res(stmt->executeQuery("SELECT * FROM conference"));

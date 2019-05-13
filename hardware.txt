@@ -1,0 +1,38 @@
+GOOD 	- powerbank
+1
+2
+3
+4
+7
+10
+14
+un-numbered
+
+BAD 	- powerbank
+16 - connection possible loose
+
+
+
+
+GOOD 	- device
+2
+
+BAD 	- device
+
+
+TO GET
+2 - monitors for computers
+phone is missing
+panels to be installed with correct panel angle
+cameras to be cleaned
+2nd camera to be checked for connectivity
+WiFi repeater to be installed on tower
+
+
+
+
+
+
+
+
+

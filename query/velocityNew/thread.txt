@@ -1,0 +1,66 @@
+#include <iostream>
+#include <concurrent_vector.h>
+#include <thread>
+#include <algorithm>
+#include <cstdlib>
+#include <atomic>
+#include <vector>
+#include <mutex>
+
+int counter = 0;
+std::vector<int> vec;
+// mutex to lock critical region
+std::mutex mylock;
+
+void push2vector() {
+	try {
+		for (int i = 0; i < 1000000; i++){
+			// increment here will generate repeated values in the vector
+			//counter++;
+			mylock.lock();
+			// increment here is thread safe
+			counter++;
+			// push back to the vector when the mutex is locked
+			// using the concurrent vector has the same effect
+			vec.push_back(counter);
+			mylock.unlock();
+		}
+	}
+	catch (std::exception e) {
+		std::cout << "counter = " << counter << std::endl;
+		std::cerr << e.what() << std::endl;
+	}
+	
+}
+
+int main() {
+
+	for (int i = 0; i < 10; i++) {
+		counter = 0;
+		vec.clear();
+		std::thread t1(push2vector);
+		std::thread t2(push2vector);
+
+		t1.join();
+		t2.join();
+
+		std::sort(vec.begin(), vec.end());
+
+		bool repeated = false;
+		for (int j = 0; j < vec.size() - 1; j++) {
+			repeated |= (vec[j] == vec[j + 1]);
+
+		}
+
+		std::cout << (repeated ? "repeat" : "no repeat") << std::endl;
+		/*
+		std::for_each(vec.begin(), vec.end(), [](int x){
+			std::cout << x << std::endl;
+		});
+		*/
+
+		system("pause");
+	}
+
+	return 0;
+}

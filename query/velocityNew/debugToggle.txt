@@ -1,0 +1,213 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/aruco.hpp>
+
+#include <thread>
+#include <atomic>
+#include <mutex>
+
+#include <chrono>
+
+#include <string>
+#include <iostream>
+#include <fstream>
+
+
+
+// database includes 
+#include "mysql_connection.h"
+#include <cppconn/driver.h>
+#include <cppconn/exception.h>
+#include <cppconn/resultset.h>
+#include <cppconn/statement.h>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+
+using namespace std;
+using namespace cv;
+
+cv::Mat displayFrame1;
+cv::Mat displayFrame2;
+
+std::atomic<bool> first1(0);
+std::atomic<bool> first2(0);
+
+const int		crossedPointX = 35200;
+const double	resetInterval = 10.0;
+
+// DEBUG true creates openCV GUI windows and keycontrols on window (ESC to exit)
+// DEBUG false disables this, allows controls through terminal (ENTER to exit)
+// ENTER to exit SHOULD BE DISABLED IN FINAL VERSION, with PRODUCTION = true
+const bool		DEBUG		= false;
+const bool		PRODUCTION	= false;
+
+const string CAM1_IP = "rtsp://192.168.0.123:554/Streaming/Channels/2/?transportmode=unicast";
+const string CAM2_IP = "rtsp://192.168.0.124:554/Streaming/Channels/2/?transportmode=unicast";
+
+
+const string C1WINDOW = "cam-ONE";
+const string C2WINDOW = "cam-TWO";
+
+
+sql::Driver *driver;
+const string HOST = "tcp://127.0.0.1:3306";
+const string USER = "root";
+const string PASSWORD = "toor";
+const string DB = "timer";
+
+Ptr<aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+
+struct Kart {
+	int id;
+	bool crossed;
+	std::string last_time;
+};
+
+class TSKartVec {
+private:
+	std::mutex mu_;
+	std::vector<Kart> vec;
+	bool var = false;
+
+	void long1() {
+		std::cout << "long1" << std::endl;
+		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		long2();
+	}
+	void long2() {
+		std::cout << "long2" << std::endl;
+		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		long3();
+	}
+	void long3() {
+		std::cout << "long3" << std::endl;
+		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+	}
+
+public:
+	void kartTransaction() {
+		std::lock_guard<std::mutex> lock(mu_);
+		std::cout << std::this_thread::get_id() << std::endl;
+		long1();
+	}
+};
+
+
+void camThread(const string IP, TSKartVec &kVec) {
+
+	Mat frame;
+	VideoCapture video(IP);
+
+
+	vector <int> ids;
+	vector <std::vector<cv::Point2f>> corners;
+
+	// open and check video	
+	if (!video.isOpened()) {
+		cout << "Error acquiring video" << endl;
+		return;
+	}
+	while (1) {
+
+		// read frame
+		video.read(frame);
+		if (!frame.empty()) {
+
+			//detect
+			cv::aruco::detectMarkers(frame, dictionary, corners, ids);
+
+			// if at least one marker detected 
+			if (ids.size() > 0) {
+				// draw
+				aruco::drawDetectedMarkers(frame, corners, ids);
+				kVec.kartTransaction();
+			}
+
+
+			if (DEBUG) {
+				if (IP == CAM1_IP) {
+					frame.copyTo(displayFrame1);
+					first1 = true;
+				}
+				else {
+					frame.copyTo(displayFrame2);
+					first2 = true;
+				}
+			}
+		}
+	}
+}
+
+
+int main(int argc, char** argv) {
+
+	// no exit controls
+	if (PRODUCTION) {
+		cout << "NO EXIT CONTROLS" << endl;
+	}
+
+	// if debug create windows
+	if (DEBUG) {
+		cout << "ESC on window to exit" << endl;
+		namedWindow(C1WINDOW);
+		namedWindow(C2WINDOW);
+
+		cv::resizeWindow(C1WINDOW, 640, 480);
+		cv::resizeWindow(C2WINDOW, 640, 480);
+	}
+
+
+	cout << "Main start" << endl;
+
+	TSKartVec kVec;
+
+	thread t1(camThread, CAM1_IP, std::ref(kVec));
+	t1.detach();
+
+	thread t2(camThread, CAM2_IP, std::ref(kVec));
+	t2.detach();
+
+	string checkExit;
+	while (1) {
+
+		// if DEBUG update windows
+		if (DEBUG) {
+			
+			if (first1 && first2) {
+
+				imshow(C1WINDOW, displayFrame1);
+				imshow(C2WINDOW, displayFrame2);
+
+
+				char character = waitKey(10);
+				switch (character)
+				{
+				case 27:
+					destroyAllWindows();
+					return 0;
+					break;
+
+				default:
+					break;
+				}
+			}
+		}
+		else {
+			// DEBUG == false, allow exit with ENTER PRESS
+			if (!PRODUCTION) {
+				cout << "ENTER KEY in TERMINAL to exit." << endl;
+				while (1) {
+					while (getline(cin, checkExit))
+					{
+						if (checkExit.empty())
+							return 0;
+					}
+				}
+			}			
+		}
+	}
+
+	return 0;
+}
+

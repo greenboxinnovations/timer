@@ -1,0 +1,18 @@
+#!/bin/bash
+
+get time here
+
+	current_date_time="`date +%Y%m%d%H%M%S`";
+	echo $current_date_time;
+
+
+
+write to file
+
+	echo "some data for the file" >> fileName
+
+
+commands
+	# crontab -e   = To edit cronjob schedule
+	# crontab -l = To list scheduled cronjobs
+	*/1 * * * * sh /scripts/everyoneminute.sh

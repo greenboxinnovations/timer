@@ -1,0 +1,120 @@
+#include <opencv2\opencv.hpp>
+#include <opencv2\aruco.hpp>
+#include <thread>
+#include <atomic>
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
+
+
+using namespace cv;
+using namespace std;
+
+cv::Mat displayFrame;
+std::atomic<bool> first = false;
+
+// GLOBALS
+
+const int		crossedPointX = 352;
+const double	resetInterval = 10.0;
+
+
+void processThread() {
+
+	Mat frame;
+	Ptr<aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+	vector <int> ids;
+	vector <std::vector<cv::Point2f>> corners;
+
+
+
+	cout << "Started" << endl;
+
+	VideoCapture video("rtsp://192.168.0.124:554/Streaming/Channels/1/?transportmode=unicast");
+
+	// open and check video	
+	if (!video.isOpened()) {
+		cout << "Error acquiring video" << endl;
+		return;
+	}
+
+
+
+	while (1) {
+
+		// read frame
+		video.read(frame);
+
+		if (!frame.empty()) {
+
+			//detect
+			cv::aruco::detectMarkers(frame, dictionary, corners, ids);
+
+			// if at least one marker detected 
+			if (ids.size() > 0) {
+				for (auto const& id : ids) {
+					cout << id << endl;
+				}				
+				// draw
+				//aruco::drawDetectedMarkers(frame, corners, ids);
+			}
+
+			//frame.copyTo(displayFrame);
+			first = true;
+		}
+	}
+}
+
+
+int main()
+{
+	cout << "this is working" << endl;
+
+	namedWindow("Result", WINDOW_NORMAL);
+	cv::resizeWindow("Result", 640, 480);
+
+	cout << "Main start" << endl;
+	// start thread
+	thread t1(processThread);
+	// runs independently
+	t1.detach();
+
+	// infinite loop
+	while (1) {
+
+		// ensure displayFrame isnt NULL
+		if (first) {
+
+			// equivalent, pre-calculated
+			// line(displayFrame, Point(displayFrame.cols/2, 0), Point(displayFrame.cols / 2, displayFrame.rows), Scalar(255, 255, 255), 2);
+			//line(displayFrame, Point(crossedPointX, 0), Point(crossedPointX, 480), Scalar(255, 0, 255), 2);
+			//imshow("Result", displayFrame);
+		}
+
+		// update UI 30 FPS -> 1000ms / 33 = 30FPS
+		switch (waitKey(33))
+		{
+		case 27:
+			// escape key
+			return 0;
+			break;
+		}
+	}
+
+	cout << "Main end" << endl;
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+

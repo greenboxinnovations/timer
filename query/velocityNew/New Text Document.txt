@@ -1,0 +1,107 @@
+#include <opencv2\opencv.hpp>
+#include <opencv2\aruco.hpp>
+#include <thread>
+#include <atomic>
+
+
+using namespace cv;
+using namespace std;
+
+cv::Mat displayFrame;
+std::atomic<bool> first = false;
+
+
+void processThread() {
+
+	Mat frame;
+	// dictionary
+	Ptr<aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+	vector < int > ids;
+	vector < std::vector < cv::Point2f > > corners;
+
+
+
+	cout << "Started" << endl;
+
+	VideoCapture video("rtsp://192.168.0.124:554/Streaming/Channels/2/?transportmode=unicast");
+
+	// open and check video	
+	if (!video.isOpened()) {
+		cout << "Error acquiring video" << endl;
+		return;
+	}
+
+
+
+	while (1) {
+
+		// read frame
+		video.read(frame);
+
+		if (!frame.empty()) {
+
+			cv::aruco::detectMarkers(frame, dictionary, corners, ids);
+
+			// if at least one marker detected 
+			if (ids.size() > 0) {
+
+				aruco::drawDetectedMarkers(frame, corners, ids);
+				for (auto const& id : ids) {
+
+					if ((id != 17) && (id != 37) && (id < 25)) {
+						cout << id << endl;
+					}
+
+				}
+			}
+
+			frame.copyTo(displayFrame);
+			first = true;
+		}
+	}
+}
+
+
+
+int main()
+{
+
+
+
+	namedWindow("Result", WINDOW_NORMAL);
+	cv::resizeWindow("Result", 640, 480);
+
+	cout << "Main start" << endl;
+	// start thread
+	thread t1(processThread);
+	// runs independently
+	t1.detach();
+
+	// infinite loop
+	while (1) {
+
+		// ensure displayFrame isnt NULL
+		if (first) {
+			//line(displayFrame, Point(0,240), Point(704,240), Scalar(255, 0, 255), 2);
+			imshow("Result", displayFrame);
+		}
+
+		// update UI 30 FPS -> 1000ms / 33 = 30FPS
+		switch (waitKey(33))
+		{
+		case 27:
+			// escape key
+			return 0;
+			break;
+		}
+	}
+
+	cout << "Main end" << endl;
+	return 0;
+}
+
+
+
+
+
+
